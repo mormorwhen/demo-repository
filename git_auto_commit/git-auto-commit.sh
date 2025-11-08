@@ -19,62 +19,33 @@ else
     exit 0
 fi
 
-# 準備 claude 的提示詞
-PROMPT="請幫我分析目前 git 變動，並且給出五個你覺得最符合目前變動的 commit，commit 內容需符合以下規則：
+# 取得變動摘要
+GIT_STATUS=$(git status --short)
+GIT_STATS=$(git diff --stat HEAD 2>/dev/null | tail -1)
+GIT_DIFF=$(git diff HEAD --no-color | grep '^[+-]' | grep -v '^+++\|^---')
 
-type 只允許使用以下類別：
-- feat: 新增/修改功能 (feature)
-- fix: 修補 bug (bug fix)
-- docs: 文件 (documentation)
-- style: 格式 (不影響程式碼運行的變動 white-space, formatting, missing semi colons, etc)
-- refactor: 重構 (既不是新增功能，也不是修補 bug 的程式碼變動)
-- perf: 改善效能 (A code change that improves performance)
-- test: 增加測試 (when adding missing tests)
-- chore: 建構程序或輔助工具的變動 (maintain)
-- revert: 撤銷回覆先前的 commit
+# 準備精簡的提示詞
+PROMPT="基於 Git 變動生成 5 個 commit message。
 
-Commit message 格式規則：
-1. Subject line (第一行):
-   - 格式: type: 簡短描述
-   - 長度不超過 50 個字元
-   - 使用祈使句，簡潔明瞭
-   - 不要加句號
+Type: feat|fix|docs|style|refactor|perf|test|chore|revert
+格式: type: 描述(50字內) + 空行 + 詳細說明(選填)
 
-2. Body (第三行開始，第二行必須是空行):
-   - 每一行不要超過 72 個字元
-   - 說明「為什麼」這個變動是必要的
-   - 說明「如何」解決問題
-   - 說明變動前後的差異
+檔案變動:
+$GIT_STATUS
 
-請分析以下 git 變動：
+統計: $GIT_STATS
 
-Git Status:
-$(git status --short)
+程式碼變動:
+$GIT_DIFF
 
-Git Diff (staged and unstaged):
-$(git diff HEAD | head -500)
-
-請給我 5 個 commit message 建議，每個建議用 '---COMMIT---' 分隔。
-
-重要：commit message 格式必須是：
-第1行：type: subject（50字元內）
-第2行：必須是空行（這很重要！）
-第3行開始：body 內容
-
-格式範例：
+輸出格式:
 ---COMMIT---
-feat: 新增使用者登入功能
+type: 簡短描述
 
-實作基本的使用者認證系統，包含：
-- 登入表單與驗證
-- Session 管理
-- 密碼加密儲存
-
-這個功能讓使用者可以安全地登入系統並保持登入狀態。
+詳細說明（選填）
 ---COMMIT---
 
-注意：subject 和 body 之間的空行是必須的！
-只輸出 commit messages，不要有其他解釋文字。"
+生成5個，只輸出commit messages。"
 
 # 獲取當前工作目錄
 CURRENT_DIR=$(pwd)
