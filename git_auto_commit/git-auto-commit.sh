@@ -22,7 +22,7 @@ fi
 # 取得變動摘要
 GIT_STATUS=$(git status --short)
 GIT_STATS=$(git diff --stat HEAD 2>/dev/null | tail -1)
-GIT_DIFF=$(git diff HEAD --no-color | grep '^[+-]' | grep -v '^+++\|^---' | head -50)
+GIT_DIFF=$(git diff HEAD --no-color | grep '^[+-]' | grep -v '^+++\|^---')
 
 # 準備精簡的提示詞
 PROMPT="基於 Git 變動生成 5 個 commit message。
@@ -35,7 +35,7 @@ $GIT_STATUS
 
 統計: $GIT_STATS
 
-程式碼變動(前50行):
+程式碼變動:
 $GIT_DIFF
 
 輸出格式:
