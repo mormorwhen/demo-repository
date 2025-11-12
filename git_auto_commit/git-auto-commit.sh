@@ -57,9 +57,9 @@ type: 簡短描述（使用繁體中文）
 # 獲取當前工作目錄
 CURRENT_DIR=$(pwd)
 
-# 調用 claude 生成 commit 建議
-echo -e "${GREEN}正在生成 commit 建議...${NC}"
-COMMITS=$(cd "$CURRENT_DIR" && echo "$PROMPT" | claude 2>&1)
+# 調用 claude 生成 commit 建議（使用 Sonnet model）
+echo -e "${GREEN}正在生成 commit 建議 (使用 Sonnet model)...${NC}"
+COMMITS=$(cd "$CURRENT_DIR" && echo "$PROMPT" | claude --model sonnet 2>&1)
 
 if [ $? -ne 0 ]; then
     echo -e "${RED}錯誤：無法調用 claude${NC}"
