@@ -25,7 +25,7 @@ GIT_STATS=$(git diff --stat HEAD 2>/dev/null | tail -1)
 GIT_DIFF=$(git diff HEAD --no-color | grep '^[+-]' | grep -v '^+++\|^---')
 
 # 準備精簡的提示詞
-PROMPT="基於 Git 變動生成 5 個 commit message。
+PROMPT="請使用繁體中文回應。基於 Git 變動生成 5 個 commit message。
 
 Type: feat|fix|docs|style|refactor|perf|test|chore|revert
 格式: type: 描述(50字內) + 空行 + 詳細說明(選填)
@@ -40,12 +40,19 @@ $GIT_DIFF
 
 輸出格式:
 ---COMMIT---
-type: 簡短描述
+type: 簡短描述（使用繁體中文）
 
-詳細說明（選填）
+詳細說明（選填，使用繁體中文）：
+1. 第一個變更項目
+2. 第二個變更項目
+3. （如有更多項目繼續編號）
 ---COMMIT---
 
-生成5個，只輸出commit messages。"
+注意：
+1. 所有描述必須使用繁體中文
+2. Body 部分的每個項目請使用編號列表格式（1. 2. 3. ...）
+3. 生成5個不同的 commit message 選項
+4. 只輸出commit messages，不要有其他說明文字"
 
 # 獲取當前工作目錄
 CURRENT_DIR=$(pwd)
