@@ -1,5 +1,12 @@
 # 更新日誌
 
+## v2.1.0 (2025-11-13)
+- **feat**: 新增多層級配置系統以設定預設服務與模型
+  - 支援 `.git-auto-commit.conf` 設定檔（專案級與全域級）
+  - 支援環境變數 `GIT_AUTO_COMMIT_SERVICE` 和 `GIT_AUTO_COMMIT_MODEL`
+  - 建立配置優先級：命令行參數 > 專案配置 > 全域配置 > 環境變數
+  - 新增 `.git-auto-commit.conf.example` 範例檔案
+
 ## v2.0.0 (2025-11-13)
 - **feat**: 新增對 Gemini 和 OpenAI 服務的支援
 - **feat**: 允許通過 `-s` 和 `-m` 參數選擇 AI 服務和模型
