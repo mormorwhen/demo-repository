@@ -2,6 +2,55 @@
 
 # git-auto-commit: 自動生成符合規範的 commit message
 
+# 參數解析
+SERVICE="claude"  # 預設使用 claude
+MODEL=""          # 特定模型（可選）
+SHOW_HELP=0
+
+# 解析命令行參數
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        -s|--service)
+            SERVICE="$2"
+            shift 2
+            ;;
+        -m|--model)
+            MODEL="$2"
+            shift 2
+            ;;
+        -h|--help)
+            SHOW_HELP=1
+            shift
+            ;;
+        *)
+            echo "未知參數: $1"
+            SHOW_HELP=1
+            shift
+            ;;
+    esac
+done
+
+# 顯示幫助訊息
+if [ $SHOW_HELP -eq 1 ]; then
+    echo "使用方式: git ac [選項]"
+    echo ""
+    echo "選項:"
+    echo "  -s, --service <service>  指定 AI 服務 (claude/gemini/openai)"
+    echo "                          預設: claude"
+    echo "  -m, --model <model>     指定模型名稱 (可選)"
+    echo "                          claude: sonnet (預設), opus, haiku"
+    echo "                          gemini: gemini-2.5-flash (預設), gemini-2.5-pro"
+    echo "                          openai: gpt-4 (預設), gpt-4-turbo, gpt-3.5-turbo"
+    echo "  -h, --help              顯示此幫助訊息"
+    echo ""
+    echo "範例:"
+    echo "  git ac                    # 使用預設 Claude Sonnet"
+    echo "  git ac -s gemini          # 使用 Gemini"
+    echo "  git ac -s claude -m opus  # 使用 Claude Opus"
+    echo "  git ac -s openai -m gpt-4 # 使用 OpenAI GPT-4"
+    exit 0
+fi
+
 # 調試模式：設置 DEBUG=1 來啟用
 DEBUG=${DEBUG:-0}
 
@@ -10,6 +59,12 @@ RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
+
+# 顯示選擇的服務
+echo -e "${GREEN}使用 AI 服務: ${YELLOW}$SERVICE${NC}"
+if [ -n "$MODEL" ]; then
+    echo -e "${GREEN}指定模型: ${YELLOW}$MODEL${NC}"
+fi
 
 # 檢查 git 狀態
 if ! git diff --quiet || ! git diff --cached --quiet || [ -n "$(git ls-files --others --exclude-standard)" ]; then
@@ -25,7 +80,7 @@ GIT_STATS=$(git diff --stat HEAD 2>/dev/null | tail -1)
 GIT_DIFF=$(git diff HEAD --no-color | grep '^[+-]' | grep -v '^+++\|^---')
 
 # 準備精簡的提示詞
-PROMPT="基於 Git 變動生成 5 個 commit message。
+PROMPT="請使用繁體中文回應。基於 Git 變動生成 5 個 commit message。
 
 Type: feat|fix|docs|style|refactor|perf|test|chore|revert
 格式: type: 描述(50字內) + 空行 + 詳細說明(選填)
@@ -40,22 +95,198 @@ $GIT_DIFF
 
 輸出格式:
 ---COMMIT---
-type: 簡短描述
+type: 簡短描述（使用繁體中文）
 
-詳細說明（選填）
+詳細說明（選填，使用繁體中文）：
+1. 第一個變更項目
+2. 第二個變更項目
+3. （如有更多項目繼續編號）
 ---COMMIT---
 
-生成5個，只輸出commit messages。"
+注意：
+1. 所有描述必須使用繁體中文
+2. Body 部分的每個項目請使用編號列表格式（1. 2. 3. ...）
+3. 生成5個不同的 commit message 選項
+4. 只輸出commit messages，不要有其他說明文字"
 
 # 獲取當前工作目錄
 CURRENT_DIR=$(pwd)
 
-# 調用 claude 生成 commit 建議
-echo -e "${GREEN}正在生成 commit 建議...${NC}"
-COMMITS=$(cd "$CURRENT_DIR" && echo "$PROMPT" | claude 2>&1)
+# 根據選擇的服務調用不同的 AI
+case $SERVICE in
+    claude)
+        # 設定預設模型
+        if [ -z "$MODEL" ]; then
+            MODEL="sonnet"
+        fi
+        echo -e "${GREEN}正在生成 commit 建議 (使用 Claude $MODEL)...${NC}"
+        COMMITS=$(cd "$CURRENT_DIR" && echo "$PROMPT" | claude --model "$MODEL" 2>&1)
+        ;;
+
+    gemini)
+        # 使用 Gemini API (需要 API key)
+        if [ -z "$MODEL" ]; then
+            MODEL="gemini-2.5-flash"  # 使用 v1beta API 的模型名稱
+        fi
+
+        # 檢查 API key
+        if [ -z "$GEMINI_API_KEY" ]; then
+            echo -e "${RED}錯誤：未設置 GEMINI_API_KEY 環境變數${NC}"
+            echo "請先設置 GEMINI_API_KEY："
+            echo "  export GEMINI_API_KEY='your-api-key'"
+            echo "取得 API key: https://makersuite.google.com/app/apikey"
+            exit 1
+        fi
+
+        echo -e "${GREEN}正在生成 commit 建議 (使用 Gemini $MODEL)...${NC}"
+
+        # 準備 JSON payload
+        # 將提示詞中的特殊字符轉義（使用 macOS 相容的方式）
+        ESCAPED_PROMPT=$(echo "$PROMPT" | sed 's/\\/\\\\/g' | sed 's/"/\\"/g' | awk '{printf "%s\\n", $0}' | sed '$ s/\\n$//')
+
+        # 構建 JSON 請求，加入系統指示要求繁體中文
+        JSON_PAYLOAD=$(cat <<EOF
+{
+  "contents": [{
+    "parts": [{
+      "text": "重要：請使用繁體中文回應所有內容。\n\n$ESCAPED_PROMPT"
+    }]
+  }],
+  "generationConfig": {
+    "temperature": 0.7,
+    "maxOutputTokens": 2048
+  },
+  "safetySettings": [
+    {
+      "category": "HARM_CATEGORY_HARASSMENT",
+      "threshold": "BLOCK_NONE"
+    },
+    {
+      "category": "HARM_CATEGORY_HATE_SPEECH",
+      "threshold": "BLOCK_NONE"
+    },
+    {
+      "category": "HARM_CATEGORY_SEXUALLY_EXPLICIT",
+      "threshold": "BLOCK_NONE"
+    },
+    {
+      "category": "HARM_CATEGORY_DANGEROUS_CONTENT",
+      "threshold": "BLOCK_NONE"
+    }
+  ]
+}
+EOF
+)
+
+        # 調用 Gemini API (使用 v1 API)
+        API_URL="https://generativelanguage.googleapis.com/v1beta/models/$MODEL:generateContent?key=$GEMINI_API_KEY"
+
+        # 使用 curl 調用 API
+        API_RESPONSE=$(curl -s -X POST \
+            -H "Content-Type: application/json" \
+            -d "$JSON_PAYLOAD" \
+            "$API_URL" 2>&1)
+
+        # 檢查是否有錯誤
+        if echo "$API_RESPONSE" | grep -q '"error"'; then
+            echo -e "${RED}錯誤：Gemini API 調用失敗${NC}"
+            echo "API 回應："
+            echo "$API_RESPONSE" | jq -r '.error.message' 2>/dev/null || echo "$API_RESPONSE"
+            exit 1
+        fi
+
+        # 從 JSON 回應中提取文本
+        # 使用 jq 如果可用，否則使用 sed
+        if command -v jq &> /dev/null; then
+            COMMITS=$(echo "$API_RESPONSE" | jq -r '.candidates[0].content.parts[0].text' 2>/dev/null)
+        else
+            # 簡單的 JSON 解析（不完美但應該足夠）
+            COMMITS=$(echo "$API_RESPONSE" | sed -n 's/.*"text"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -1)
+            # 將 \n 轉換為實際換行
+            COMMITS=$(echo -e "$COMMITS")
+        fi
+        ;;
+
+    openai)
+        # 使用 OpenAI API (需要 API key)
+        if [ -z "$MODEL" ]; then
+            MODEL="gpt-4"
+        fi
+
+        # 檢查 API key
+        if [ -z "$OPENAI_API_KEY" ]; then
+            echo -e "${RED}錯誤：未設置 OPENAI_API_KEY 環境變數${NC}"
+            echo "請先設置 OPENAI_API_KEY："
+            echo "  export OPENAI_API_KEY='your-api-key'"
+            echo "取得 API key: https://platform.openai.com/api-keys"
+            exit 1
+        fi
+
+        echo -e "${GREEN}正在生成 commit 建議 (使用 OpenAI $MODEL)...${NC}"
+
+        # 準備 JSON payload
+        # 將提示詞中的特殊字符轉義（使用 macOS 相容的方式）
+        ESCAPED_PROMPT=$(echo "$PROMPT" | sed 's/\\/\\\\/g' | sed 's/"/\\"/g' | awk '{printf "%s\\n", $0}' | sed '$ s/\\n$//')
+
+        # 構建 JSON 請求
+        JSON_PAYLOAD=$(cat <<EOF
+{
+  "model": "$MODEL",
+  "messages": [
+    {
+      "role": "system",
+      "content": "你是一個專業的 Git commit message 生成助手。重要：請使用繁體中文回應所有內容。請根據提供的變更內容生成符合規範的 commit messages。"
+    },
+    {
+      "role": "user",
+      "content": "$ESCAPED_PROMPT"
+    }
+  ],
+  "temperature": 0.7,
+  "max_tokens": 2048
+}
+EOF
+)
+
+        # 調用 OpenAI API
+        API_URL="https://api.openai.com/v1/chat/completions"
+
+        # 使用 curl 調用 API
+        API_RESPONSE=$(curl -s -X POST \
+            -H "Content-Type: application/json" \
+            -H "Authorization: Bearer $OPENAI_API_KEY" \
+            -d "$JSON_PAYLOAD" \
+            "$API_URL" 2>&1)
+
+        # 檢查是否有錯誤
+        if echo "$API_RESPONSE" | grep -q '"error"'; then
+            echo -e "${RED}錯誤：OpenAI API 調用失敗${NC}"
+            echo "API 回應："
+            echo "$API_RESPONSE" | jq -r '.error.message' 2>/dev/null || echo "$API_RESPONSE"
+            exit 1
+        fi
+
+        # 從 JSON 回應中提取文本
+        # 使用 jq 如果可用，否則使用 sed
+        if command -v jq &> /dev/null; then
+            COMMITS=$(echo "$API_RESPONSE" | jq -r '.choices[0].message.content' 2>/dev/null)
+        else
+            # 簡單的 JSON 解析（不完美但應該足夠）
+            COMMITS=$(echo "$API_RESPONSE" | sed -n 's/.*"content"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -1)
+            # 將 \n 轉換為實際換行
+            COMMITS=$(echo -e "$COMMITS")
+        fi
+        ;;
+
+    *)
+        echo -e "${RED}錯誤：不支援的服務 '$SERVICE'${NC}"
+        echo "支援的服務：claude, gemini, openai"
+        exit 1
+        ;;
+esac
 
 if [ $? -ne 0 ]; then
-    echo -e "${RED}錯誤：無法調用 claude${NC}"
+    echo -e "${RED}錯誤：無法調用 $SERVICE${NC}"
     echo "錯誤詳情："
     echo "$COMMITS"
     exit 1
@@ -63,18 +294,18 @@ fi
 
 # 檢查是否成功獲得回應
 if [ -z "$COMMITS" ]; then
-    echo -e "${RED}錯誤：claude 沒有返回任何建議${NC}"
+    echo -e "${RED}錯誤：$SERVICE 沒有返回任何建議${NC}"
     exit 1
 fi
 
 # 調試模式輸出
 if [ "$DEBUG" = "1" ]; then
-    echo -e "${YELLOW}[調試] Claude 原始回應：${NC}"
+    echo -e "${YELLOW}[調試] $SERVICE 原始回應：${NC}"
     echo "$COMMITS"
     echo -e "${YELLOW}[調試] ---結束---${NC}"
 fi
 
-# 解析 claude 的回應，提取 commit messages
+# 解析 AI 的回應，提取 commit messages
 COMMIT_OPTIONS=""
 IFS=$'\n'
 COMMIT_ARRAY=()
@@ -150,8 +381,8 @@ fi
 
 # 檢查是否有有效的 commit 建議
 if [ ${#COMMIT_ARRAY[@]} -eq 0 ]; then
-    echo -e "${RED}錯誤：無法解析 claude 的回應${NC}"
-    echo "Claude 回應內容："
+    echo -e "${RED}錯誤：無法解析 $SERVICE 的回應${NC}"
+    echo "$SERVICE 回應內容："
     echo "$COMMITS"
     exit 1
 fi

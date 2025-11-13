@@ -1,17 +1,16 @@
-# Git Auto-Commit 自動化提交工具
+# Git Auto-Commit: AI 驅動的自動化提交工具
 
-一個智慧型 Git 提交工具，使用 Claude AI 自動分析程式碼變更並生成符合規範的 commit message。
+一個智慧型 Git 提交工具，使用 AI 服務 (Claude, Gemini, OpenAI) 自動分析程式碼變更並生成符合規範的 commit message。
 
 ## 功能特色
 
-- 🤖 自動分析 Git 變更內容
-- 📝 生成 5 個符合規範的 commit message 建議
-- 🎯 支援完整的 commit 格式（subject + body）
-- 🔍 提供預覽功能，可查看完整 commit 內容
-- ✨ 自動將所有變更加入暫存區
-- 🎨 彩色輸出介面，易於閱讀
-- ⚡ 效能優化：精簡的提示詞設計
-- 🗑️ 自動清理：臨時檔案在腳本結束時自動刪除
+- 🤖 **多服務支援**: 可選擇 Claude, Gemini, 或 OpenAI。
+- 📝 **智慧生成**: 分析 Git 變更，生成 5 個高品質的 commit message 建議。
+- 🎯 **完整格式**: 支援標準的 commit 格式（subject + body）。
+- 🔍 **即時預覽**: 在選擇時可查看完整的 commit 內容。
+- ✨ **自動暫存**: 自動將所有變更加入暫存區 (`git add .`)。
+- 🎨 **彩色介面**: 易於閱讀的彩色輸出。
+- 🗑️ **自動清理**: 臨時檔案在腳本結束時自動刪除。
 
 ## 需求限制
 
@@ -21,11 +20,6 @@
 - **Git**: 2.0+
 
 ### 必要工具
-- **claude**: Claude CLI 工具（必須已安裝並配置）
-  ```bash
-  # 檢查是否已安裝
-  which claude
-  ```
 - **fzf**: 命令行模糊搜尋工具
   ```bash
   # macOS 安裝
@@ -36,55 +30,29 @@
   ~/.fzf/install
   ```
 
-### Claude CLI 設定
-需要先安裝並設定 Claude CLI：
-```bash
-npm install -g @anthropics/claude-cli
-# 或
-pnpm install -g @anthropics/claude-cli
-```
+### API 金鑰設定
+你需要為你選擇的 AI 服務設定環境變數：
+
+- **For Claude**:
+  - 需要安裝 Claude CLI: `npm install -g @anthropics/claude-cli`
+- **For Gemini**:
+  - `export GEMINI_API_KEY='your-api-key'`
+  - 取得金鑰: [makersuite.google.com/app/apikey](https://makersuite.google.com/app/apikey)
+- **For OpenAI**:
+  - `export OPENAI_API_KEY='your-api-key'`
+  - 取得金鑰: [platform.openai.com/api-keys](https://platform.openai.com/api-keys)
 
 ## 安裝方式
 
-### 方法一：全域安裝（建議）
-
-1. 複製腳本到系統路徑：
-```bash
-# 複製腳本到 /usr/local/bin
-cp git-auto-commit.sh /usr/local/bin/git-auto-commit
-
-# 設定執行權限
-chmod +x /usr/local/bin/git-auto-commit
-```
-
-2. 驗證安裝：
-```bash
-# 測試指令
-git auto-commit
-```
-
-### 方法二：專案內使用
-
-1. 將腳本放在你的專案目錄：
-```bash
-# 進入你的專案目錄
-cd /path/to/your/project
-
-# 複製腳本到專案（假設腳本在當前目錄）
-cp git-auto-commit.sh ./
-
-# 設定執行權限
-chmod +x git-auto-commit.sh
-
-# 使用腳本
-./git-auto-commit.sh
-```
-
-### 方法三：設定 Git Alias
+### 設定 Git Alias (建議)
 
 ```bash
-# 設定 git alias
-git config --global alias.ac '!/usr/local/bin/git-auto-commit'
+# 將 git-auto-commit.sh 放在你喜歡的位置，例如 /usr/local/bin
+# cp git-auto-commit.sh /usr/local/bin/git-auto-commit
+# chmod +x /usr/local/bin/git-auto-commit
+
+# 設定 git alias 'ac'
+git config --global alias.ac '!/path/to/your/git-auto-commit.sh'
 
 # 使用方式
 git ac
@@ -93,56 +61,52 @@ git ac
 ## 操作方式
 
 ### 基本使用
+在你的 Git 專案中執行 `git ac` 並加上服務選項。
 
-1. **在有變更的 Git 專案中執行**：
+#### 1. 使用 Claude (預設)
 ```bash
-git auto-commit
+# 使用預設模型 (sonnet)
+git ac
+
+# 或明確指定
+git ac -s claude
+
+# 使用特定模型 (e.g., opus)
+git ac -s claude -m opus
 ```
 
-2. **流程說明**：
-   - 腳本自動偵測 Git 變更
-   - 呼叫 Claude 分析變更並生成 5 個 commit 建議
-   - 使用 fzf 介面選擇合適的 commit message
-   - 預覽窗口顯示完整的 commit 內容（包含 body）
-   - 自動將所有變更加入暫存區（執行 `git add .`）
-   - 顯示即將提交的變更摘要
-   - 確認後執行提交
-   - 臨時檔案自動清理
+#### 2. 使用 Gemini
+```bash
+# 使用預設模型 (gemini-2.5-flash)
+git ac -s gemini
+
+# 使用特定模型 (e.g., gemini-2.5-pro)
+git ac -s gemini -m gemini-2.5-pro
+```
+
+#### 3. 使用 OpenAI
+```bash
+# 使用預設模型 (gpt-4)
+git ac -s openai
+
+# 使用特定模型 (e.g., gpt-4-turbo)
+git ac -s openai -m gpt-4-turbo
+```
+
+### 流程說明
+1.  腳本自動偵測 Git 變更。
+2.  呼叫指定的 AI 服務分析變更並生成 5 個 commit 建議。
+3.  使用 `fzf` 介面選擇合適的 commit message。
+4.  預覽窗口顯示完整的 commit 內容。
+5.  自動將所有變更加入暫存區 (`git add .`)。
+6.  確認後執行提交。
 
 ### 調試模式
-
 遇到問題時可啟用調試模式：
 ```bash
-DEBUG=1 git auto-commit
+DEBUG=1 git ac -s gemini
 ```
-
-調試模式會顯示：
-- Claude 的原始回應
-- 解析出的 commit 數量和內容
-- 選擇的索引值
-
-### 使用範例
-
-```bash
-# 1. 修改檔案後
-echo "new feature" > feature.txt
-
-# 2. 執行 auto-commit
-git auto-commit
-
-# 3. 畫面顯示
-偵測到 git 變動，正在分析...
-正在生成 commit 建議...
-請選擇一個 commit message (只顯示標題行):
-
-[1] feat: 新增功能特性檔案     │ === Commit 1 ===
-[2] docs: 新增 feature 文件    │ feat: 新增功能特性檔案
-[3] chore: 新增測試檔案        │
-[4] test: 加入功能測試檔案     │ 新增 feature.txt 檔案以實作新功能
-[5] feat: 建立新功能模組       │ 這個檔案將用於...
-
-# 4. 選擇後自動提交
-```
+調試模式會顯示 AI 的原始回應、解析出的 commit 內容等資訊。
 
 ## Commit Message 規範
 
@@ -209,19 +173,7 @@ body 說明為什麼這個變動是必要的，
 
 ## 更新日誌
 
-### v1.1.0 (2024-11-09)
-- 改進預覽功能：使用動態生成的預覽腳本
-- 加強檔案管理：自動清理臨時檔案
-- 優化 commit 處理：使用 `-F` 參數正確處理多行 commit
-- 改進錯誤處理和調試輸出
-- 效能優化：優化提示詞設計
-
-### v1.0.0 (2024-11-08)
-- 初始版本發布
-- 支援自動分析 Git 變更
-- 整合 Claude AI 生成 commit message
-- 支援 fzf 互動式選擇
-- 自動管理暫存區
+詳細的變更歷史請參閱 [CHANGELOG.md](changelog.md)。
 
 ## 授權
 
