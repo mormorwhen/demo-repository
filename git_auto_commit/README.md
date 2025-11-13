@@ -58,6 +58,42 @@ git config --global alias.ac '!/path/to/your/git-auto-commit.sh'
 git ac
 ```
 
+## 設定預設值
+
+### 設定方式（優先順序由高到低）
+
+1. **命令行參數**（最高優先級）
+   ```bash
+   git ac -s gemini -m gemini-2.5-pro
+   ```
+
+2. **專案配置檔**
+   在專案根目錄創建 `.git-auto-commit.conf`：
+   ```bash
+   # .git-auto-commit.conf
+   DEFAULT_SERVICE="gemini"
+   DEFAULT_MODEL="gemini-2.5-pro"
+   ```
+
+3. **全域配置檔**
+   在家目錄創建 `~/.git-auto-commit.conf`：
+   ```bash
+   # ~/.git-auto-commit.conf
+   DEFAULT_SERVICE="openai"
+   DEFAULT_MODEL="gpt-4"
+   ```
+
+4. **環境變數**
+   在 shell 配置檔（如 `~/.bashrc` 或 `~/.zshrc`）中設定：
+   ```bash
+   export GIT_AUTO_COMMIT_SERVICE="claude"
+   export GIT_AUTO_COMMIT_MODEL="opus"
+   ```
+
+### 配置範例
+
+參考 `.git-auto-commit.conf.example` 檔案來創建你的配置。
+
 ## 操作方式
 
 ### 基本使用
@@ -65,10 +101,10 @@ git ac
 
 #### 1. 使用 Claude (預設)
 ```bash
-# 使用預設模型 (sonnet)
+# 使用預設設定（會根據你的配置而定）
 git ac
 
-# 或明確指定
+# 明確指定使用 Claude
 git ac -s claude
 
 # 使用特定模型 (e.g., opus)

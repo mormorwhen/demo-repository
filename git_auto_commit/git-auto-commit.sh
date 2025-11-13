@@ -2,9 +2,31 @@
 
 # git-auto-commit: 自動生成符合規範的 commit message
 
+# 預設值配置
+# 可以通過環境變數覆蓋這些預設值：
+#   export GIT_AUTO_COMMIT_SERVICE="gemini"
+#   export GIT_AUTO_COMMIT_MODEL="gemini-2.5-pro"
+DEFAULT_SERVICE="${GIT_AUTO_COMMIT_SERVICE:-claude}"  # 預設使用 claude
+DEFAULT_MODEL="${GIT_AUTO_COMMIT_MODEL:-}"            # 預設模型（依服務而定）
+
+# 載入配置檔案（如果存在）
+# 優先順序：專案配置 > 家目錄配置 > 環境變數 > 內建預設值
+CONFIG_FILE=""
+if [ -f ".git-auto-commit.conf" ]; then
+    CONFIG_FILE=".git-auto-commit.conf"
+elif [ -f "$HOME/.git-auto-commit.conf" ]; then
+    CONFIG_FILE="$HOME/.git-auto-commit.conf"
+fi
+
+if [ -n "$CONFIG_FILE" ]; then
+    # 載入配置檔案
+    source "$CONFIG_FILE" 2>/dev/null
+    # 配置檔案可以設定 DEFAULT_SERVICE 和 DEFAULT_MODEL 變數
+fi
+
 # 參數解析
-SERVICE="claude"  # 預設使用 claude
-MODEL=""          # 特定模型（可選）
+SERVICE="$DEFAULT_SERVICE"  # 使用預設服務
+MODEL="$DEFAULT_MODEL"      # 使用預設模型
 SHOW_HELP=0
 
 # 解析命令行參數
@@ -36,15 +58,27 @@ if [ $SHOW_HELP -eq 1 ]; then
     echo ""
     echo "選項:"
     echo "  -s, --service <service>  指定 AI 服務 (claude/gemini/openai)"
-    echo "                          預設: claude"
+    echo "                          預設: $DEFAULT_SERVICE"
     echo "  -m, --model <model>     指定模型名稱 (可選)"
     echo "                          claude: sonnet (預設), opus, haiku"
     echo "                          gemini: gemini-2.5-flash (預設), gemini-2.5-pro"
     echo "                          openai: gpt-4 (預設), gpt-4-turbo, gpt-3.5-turbo"
     echo "  -h, --help              顯示此幫助訊息"
     echo ""
+    echo "設定預設值的方式 (優先順序由高到低):"
+    echo "  1. 命令行參數: git ac -s gemini -m gemini-2.5-pro"
+    echo "  2. 專案配置檔: .git-auto-commit.conf"
+    echo "  3. 全域配置檔: ~/.git-auto-commit.conf"
+    echo "  4. 環境變數:"
+    echo "     export GIT_AUTO_COMMIT_SERVICE=gemini"
+    echo "     export GIT_AUTO_COMMIT_MODEL=gemini-2.5-pro"
+    echo ""
+    echo "配置檔案格式範例:"
+    echo "  DEFAULT_SERVICE=\"gemini\""
+    echo "  DEFAULT_MODEL=\"gemini-2.5-pro\""
+    echo ""
     echo "範例:"
-    echo "  git ac                    # 使用預設 Claude Sonnet"
+    echo "  git ac                    # 使用預設設定"
     echo "  git ac -s gemini          # 使用 Gemini"
     echo "  git ac -s claude -m opus  # 使用 Claude Opus"
     echo "  git ac -s openai -m gpt-4 # 使用 OpenAI GPT-4"

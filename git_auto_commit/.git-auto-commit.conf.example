@@ -1,0 +1,25 @@
+# git-auto-commit 配置檔案範例
+# 將此檔案複製為 .git-auto-commit.conf 放在專案根目錄或家目錄
+
+# 預設 AI 服務 (claude/gemini/openai)
+DEFAULT_SERVICE="claude"
+
+# 預設模型
+# Claude: sonnet, opus, haiku
+# Gemini: gemini-2.5-flash, gemini-2.5-pro
+# OpenAI: gpt-4, gpt-4-turbo, gpt-3.5-turbo
+DEFAULT_MODEL="sonnet"
+
+# 範例配置：
+
+# 使用 Gemini 2.5 Pro 作為預設
+# DEFAULT_SERVICE="gemini"
+# DEFAULT_MODEL="gemini-2.5-pro"
+
+# 使用 Claude Opus 作為預設
+# DEFAULT_SERVICE="claude"
+# DEFAULT_MODEL="opus"
+
+# 使用 OpenAI GPT-4 作為預設
+# DEFAULT_SERVICE="openai"
+# DEFAULT_MODEL="gpt-4"
