@@ -34,7 +34,7 @@
 你需要為你選擇的 AI 服務設定環境變數：
 
 - **For Claude**:
-  - 需要安裝 Claude CLI: `npm install -g @anthropics/claude-cli`
+  - 需要安裝 Claude CLI: `npm install -g @anthropic-ai/claude-code`
 - **For Gemini**:
   - `export GEMINI_API_KEY='your-api-key'`
   - 取得金鑰: [makersuite.google.com/app/apikey](https://makersuite.google.com/app/apikey)
@@ -49,7 +49,7 @@
 ```bash
 # 將 git-auto-commit.sh 放在你喜歡的位置，例如 /usr/local/bin
 # cp git-auto-commit.sh /usr/local/bin/git-auto-commit
-# chmod +x /usr/local/bin/git-auto-commit
+# chmod +x /usr/local/bin/git-auto-commit.sh
 
 # 設定 git alias 'ac'
 git config --global alias.ac '!/path/to/your/git-auto-commit.sh'
